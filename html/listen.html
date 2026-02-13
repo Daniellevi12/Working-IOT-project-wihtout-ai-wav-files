@@ -61,6 +61,13 @@
                     <button id="start" class="btn btn-danger btn-lg px-5 mx-2" onclick="sendCmd('START')">🔴 START</button>
                 </div>
 
+                <div class="mb-3 text-center">
+                    <label class="form-label small text-secondary mb-1">בחר רכב להאזנה</label>
+                    <select id="carSelect" class="form-select w-50 mx-auto">
+                        <option value="" selected disabled>בחר רכב</option>
+                    </select>
+                </div>
+
                 <div class="diagnosis-card p-4 shadow-lg mb-4">
                     <p class="text-secondary small mb-1">תוצאות אבחון</p>
                     <h1 id="resLabel" class="display-4 fw-bold text-primary">STANDBY</h1>
@@ -208,6 +215,15 @@
                     const top = result.results.sort((a, b) => b.value - a.value)[0];
                     updateUI(top.label, top.value);
                     log(`AI Result: ${top.label} (${(top.value * 100).toFixed(1)}%)`);
+                    // Notify other scripts about the AI result (label + confidence)
+                    try {
+                        document.dispatchEvent(new CustomEvent('ai-result', {
+                            detail: {
+                                label: top.label,
+                                confidence: top.value
+                            }
+                        }));
+                    } catch (e) { /* ignore */ }
                 }
             } catch (err) {
                 log("Inference Error: " + err.message);
@@ -235,6 +251,12 @@
         }
 
         window.onload = startApp;
+    </script>
+
+    <script type="module">
+        import { pushScan } from './carsense.js'; document.addEventListener('ai-result', (e) => { try { const sel = document.getElementById('carSelect'); if (!sel) return; const carId = sel.value; if (!carId) return; const label = e.detail && e.detail.label ?
+        e.detail.label : 'unknown'; pushScan(carId, label); const debug = document.getElementById('debug-log'); if (debug) { debug.innerHTML += `[${new Date().toLocaleTimeString()}] Saved scan: ${label} for car ${carId}<br>`; } } catch (err) {
+        console.error('pushScan failed', err); } });
     </script>
 </body>
 

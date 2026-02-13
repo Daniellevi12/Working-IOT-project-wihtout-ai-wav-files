@@ -1,17 +1,17 @@
 // Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyDfmDZO12RvN9h5Suk2v2Air6LIr4dGIE4",
-  authDomain: "carsense-abb24.firebaseapp.com",
-  databaseURL: "https://carsense-abb24-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "carsense-abb24",
-  storageBucket: "carsense-abb24.firebasestorage.app",
-  messagingSenderId: "225453696410",
-  appId: "1:225453696410:web:54ff1fba95d4b02f9f8623",
-  measurementId: "G-W5DP1WBC4S"
+    apiKey: "AIzaSyDfmDZO12RvN9h5Suk2v2Air6LIr4dGIE4",
+    authDomain: "carsense-abb24.firebaseapp.com",
+    databaseURL: "https://carsense-abb24-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "carsense-abb24",
+    storageBucket: "carsense-abb24.firebasestorage.app",
+    messagingSenderId: "225453696410",
+    appId: "1:225453696410:web:54ff1fba95d4b02f9f8623",
+    measurementId: "G-W5DP1WBC4S"
 };
 
 const GOOGLE_API_KEY = "AIzaSyAl02aiiA_eUd-uvwOVOYDIUqA7RV-Dg2w"; // <-- replace with your key
-const GOOGLE_CX = "d40150ce5f8e94232";       // your CSE ID
+const GOOGLE_CX = "d40150ce5f8e94232"; // your CSE ID
 
 // ----- Firebase Imports -----
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
@@ -25,124 +25,126 @@ const provider = new GoogleAuthProvider();
 const db = getDatabase(app);
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ----- Page Elements -----
-  const loginBtn = document.getElementById("loginBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const listenBtn = document.getElementById("listenBtn");
-  const resultDiv = document.getElementById("result");
-  const carSection = document.getElementById("carSection");
-  const carSelect = document.getElementById("carSelect");
-  const addCarBtn = document.getElementById("addCarBtn");
-  const carMake = document.getElementById("carMake");
-  const carModel = document.getElementById("carModel");
-  const carYear = document.getElementById("carYear");
-  const carPlate = document.getElementById("carPlate");
-  const notes = document.getElementById("notes");
-  const carsList = document.getElementById("carsList"); // cars.html
-  const carSelector = document.getElementById("carSelector"); // scans.html
-  const scansList = document.getElementById("scansList"); // scans.html
+            // ----- Page Elements -----
+            const loginBtn = document.getElementById("loginBtn");
+            const logoutBtn = document.getElementById("logoutBtn");
+            const listenBtn = document.getElementById("listenBtn");
+            const resultDiv = document.getElementById("result");
+            const carSection = document.getElementById("carSection");
+            const carSelect = document.getElementById("carSelect");
+            const addCarBtn = document.getElementById("addCarBtn");
+            const carMake = document.getElementById("carMake");
+            const carModel = document.getElementById("carModel");
+            const carYear = document.getElementById("carYear");
+            const carPlate = document.getElementById("carPlate");
+            const notes = document.getElementById("notes");
+            const carsList = document.getElementById("carsList"); // cars.html
+            const carSelector = document.getElementById("carSelector"); // scans.html
+            const scansList = document.getElementById("scansList"); // scans.html
 
-  let currentUser = null;
-  let currentCarId = null;
-  let scansListeners = {};
+            let currentUser = null;
+            let currentCarId = null;
+            let scansListeners = {};
 
 
-  // ----- Google Login -----
-  if (loginBtn) {
-    loginBtn.addEventListener("click", () => {
-      signInWithPopup(auth, provider)
-        .then(result => alert(`שלום ${result.user.displayName}!`))
-        .catch(console.error);
-    });
-  }
+            // ----- Google Login -----
+            if (loginBtn) {
+                loginBtn.addEventListener("click", () => {
+                    signInWithPopup(auth, provider)
+                        .then(result => alert(`שלום ${result.user.displayName}!`))
+                        .catch(console.error);
+                });
+            }
 
-  // ----- Logout -----
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => signOut(auth).then(() => window.location.reload()));
-  }
+            // ----- Logout -----
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", () => signOut(auth).then(() => window.location.reload()));
+            }
 
-  // ----- Auth State -----
-  onAuthStateChanged(auth, user => {
-    currentUser = user || null;
+            // ----- Auth State -----
+            onAuthStateChanged(auth, user => {
+                currentUser = user || null;
 
-    if (loginBtn) loginBtn.style.display = user ? "none" : "inline-block";
-    if (logoutBtn) logoutBtn.style.display = user ? "inline-block" : "none";
+                if (loginBtn) loginBtn.style.display = user ? "none" : "inline-block";
+                if (logoutBtn) logoutBtn.style.display = user ? "inline-block" : "none";
 
-    // ----- Cars page -----
-    if (carSection) carSection.style.display = user ? "block" : "none";
-    if (listenBtn) listenBtn.disabled = !user;
+                // ----- Cars page -----
+                if (carSection) carSection.style.display = user ? "block" : "none";
+                if (listenBtn) listenBtn.disabled = !user;
 
-    if (carsList && user) loadUserCars();
-    if (carSelect && user) {
-      carSelect.innerHTML = '<option disabled selected>בחר רכב</option>';
-      resultDiv && (resultDiv.innerHTML = "");
-    }
+                if (carsList && user) loadUserCars();
+                if (carSelect && user) {
+                    carSelect.innerHTML = '<option disabled selected>בחר רכב</option>';
+                    resultDiv && (resultDiv.innerHTML = "");
+                }
 
-    // ----- Scans page -----
-    if (scansList && carSelector) {
-      scansList.innerHTML = user ? "" : "<p>נא להתחבר כדי לראות סריקות</p>";
-      if (user) loadCarsForScans();
-    }
-    // ----- Load Cars for Listen.html -----
-    if (carSelect && currentUser) {
-      const carsRef = ref(db, `users/${currentUser.uid}/cars`);
+                // ----- Scans page -----
+                if (scansList && carSelector) {
+                    scansList.innerHTML = user ? "" : "<p>נא להתחבר כדי לראות סריקות</p>";
+                    if (user) loadCarsForScans();
+                }
+                // ----- Load Cars for Listen.html -----
+                if (carSelect && currentUser) {
+                    const carsRef = ref(db, `users/${currentUser.uid}/cars`);
 
-      onValue(carsRef, snap => {
-        carSelect.innerHTML = '<option value="">בחר רכב</option>';
-        let firstCarId = null;
+                    onValue(carsRef, snap => {
+                        carSelect.innerHTML = '<option value="">בחר רכב</option>';
+                        let firstCarId = null;
 
-        snap.forEach(carSnap => {
-          const carId = carSnap.key;
-          const car = carSnap.val();
-          const option = document.createElement("option");
-          option.value = carId;
-          option.textContent = `${car.make} ${car.model} (${car.year}) - ${car.plate}`;
-          carSelect.appendChild(option);
+                        snap.forEach(carSnap => {
+                            const carId = carSnap.key;
+                            const car = carSnap.val();
+                            const option = document.createElement("option");
+                            option.value = carId;
+                            option.textContent = `${car.make} ${car.model} (${car.year}) - ${car.plate}`;
+                            carSelect.appendChild(option);
 
-          if (!firstCarId) firstCarId = carId;
-        });
+                            if (!firstCarId) firstCarId = carId;
+                        });
 
-        // Auto-select the first car if exists
-        if (firstCarId) {
-          carSelect.value = firstCarId;
-          currentCarId = firstCarId;
-        }
-      });
-    }
+                        // Auto-select the first car if exists
+                        if (firstCarId) {
+                            carSelect.value = firstCarId;
+                            currentCarId = firstCarId;
+                        }
+                    });
+                }
 
-  });
+            });
 
-  // ----- Add New Car (cars.html) -----
-  if (addCarBtn) {
-    addCarBtn.addEventListener("click", async () => {
-      const make = carMake.value.trim();
-      const model = carModel.value.trim();
-      const year = carYear.value.trim();
-      const plate = carPlate.value.trim();
-      if (!make || !model || !year || !plate) return alert("נא למלא את כל השדות");
+            // ----- Add New Car (cars.html) -----
+            if (addCarBtn) {
+                addCarBtn.addEventListener("click", async() => {
+                    const make = carMake.value.trim();
+                    const model = carModel.value.trim();
+                    const year = carYear.value.trim();
+                    const plate = carPlate.value.trim();
+                    if (!make || !model || !year || !plate) return alert("נא למלא את כל השדות");
 
-      const imgUrl = await getCarImage(make, model, year);
-      const newCarRef = push(ref(db, `users/${currentUser.uid}/cars`));
-      await set(newCarRef, { make, model, year, plate, img: imgUrl || "" });
+                    const imgUrl = await getCarImage(make, model, year);
+                    const newCarRef = push(ref(db, `users/${currentUser.uid}/cars`));
+                    await set(newCarRef, { make, model, year, plate, img: imgUrl || "" });
 
-      // Reset form
-      carMake.value = carModel.value = carYear.value = carPlate.value = "";
-      loadUserCars();
-    });
-  }
+                    // Reset form
+                    carMake.value = carModel.value = carYear.value = carPlate.value = "";
+                    loadUserCars();
+                    // Notify UI that a car was added (pages can listen for this)
+                    try { document.dispatchEvent(new CustomEvent('car-added')); } catch (e) { /* ignore */ }
+                });
+            }
 
-  // ----- Load User Cars (cars.html) -----
-  function loadUserCars() {
-    if (!currentUser || !carsList) return;
-    const carsRef = ref(db, `users/${currentUser.uid}/cars`);
-    off(carsRef);
-    carsList.innerHTML = "";
+            // ----- Load User Cars (cars.html) -----
+            function loadUserCars() {
+                if (!currentUser || !carsList) return;
+                const carsRef = ref(db, `users/${currentUser.uid}/cars`);
+                off(carsRef);
+                carsList.innerHTML = "";
 
-    onChildAdded(carsRef, snap => {
-      const car = snap.val();
-      const div = document.createElement("div");
-      div.className = "card mb-3 bg-dark text-white p-3 col-12 col-md-6";
-      div.innerHTML = `
+                onChildAdded(carsRef, snap => {
+                            const car = snap.val();
+                            const div = document.createElement("div");
+                            div.className = "card mb-3 bg-dark text-white p-3 col-12 col-md-6";
+                            div.innerHTML = `
         <h4>${car.make} ${car.model} (${car.year})</h4>
         <p>Plate: ${car.plate}</p>
         ${car.img ? `<img src="${car.img}" alt="${car.make} ${car.model}" style="max-width:300px; display:block; margin-top:10px;">` : ""}
@@ -293,4 +295,3 @@ export function pushScan(carId, label) {
 
   push(scansRef, newScan);
 }
-

@@ -3,8 +3,8 @@
 #include <WebSocketsClient.h>
 #include <driver/i2s.h>
 
-const char *ssid = "Dan";
-const char *pass = "12340987";
+const char *ssid = "levi 2.4";
+const char *pass = "0505550700";
 const char *host = "esp32serverproject2.onrender.com";
 
 WebSocketsClient ws;
