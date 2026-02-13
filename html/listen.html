@@ -170,18 +170,32 @@
                 try {
                     const data = JSON.parse(e.data);
                     if (data.audioData) {
-                        log("Processing audio data...");
+                        log("New Data received...");
+
+                        // 1. Convert Base64 to ArrayBuffer
                         const base64String = data.audioData.split(',')[1];
-                        const binaryString = window.atob(base64String);
-                        const bytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {
-                            bytes[i] = binaryString.charCodeAt(i);
+                        const binaryDoc = window.atob(base64String);
+                        const len = binaryDoc.length;
+                        const bytes = new Uint8Array(len);
+                        for (let i = 0; i < len; i++) {
+                            bytes[i] = binaryDoc.charCodeAt(i);
                         }
-                        const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
-                        const audioBuffer = await audioCtx.decodeAudioData(bytes.buffer);
-                        const float32Data = audioBuffer.getChannelData(0);
-                        runInference(float32Data);
-                        await audioCtx.close();
+
+                        // 2. Setup Audio Context with fixed sample rate
+                        const audioCtx = new(window.AudioContext || window.webkitAudioContext)({
+                            sampleRate: 16000
+                        });
+
+                        // 3. Decode and handle promise
+                        audioCtx.decodeAudioData(bytes.buffer).then(audioBuffer => {
+                            const float32Data = audioBuffer.getChannelData(0);
+                            log(`Decoded: ${float32Data.length} samples at ${audioBuffer.sampleRate}Hz`);
+                            runInference(float32Data);
+                            audioCtx.close();
+                        }).catch(err => {
+                            log("Decode Error: " + err.message);
+                            audioCtx.close();
+                        });
                     }
                 } catch (err) {
                     log("WS Error: " + err.message);
@@ -192,41 +206,41 @@
         function runInference(features) {
             try {
                 const SAMPLES_NEEDED = 16000;
-                let offset = features.length > SAMPLES_NEEDED ? Math.floor((features.length - SAMPLES_NEEDED) / 2) : 0;
-                let cleanSlice = features.slice(offset, offset + SAMPLES_NEEDED);
-
-                let maxVal = 0;
-                for (let i = 0; i < cleanSlice.length; i++) {
-                    let abs = Math.abs(cleanSlice[i]);
-                    if (abs > maxVal) maxVal = abs;
-                }
-
                 let finalFeatures = new Float32Array(SAMPLES_NEEDED);
-                if (maxVal > 0.01) {
-                    for (let i = 0; i < cleanSlice.length; i++) {
-                        finalFeatures[i] = cleanSlice[i] / maxVal;
+
+                // 1. Prepare and Scale data
+                for (let i = 0; i < SAMPLES_NEEDED; i++) {
+                    // If features exist, scale them. If not, pad with 0 (silence)
+                    if (i < features.length) {
+                        finalFeatures[i] = features[i] * 32767;
+                    } else {
+                        finalFeatures[i] = 0;
                     }
-                } else {
-                    finalFeatures.set(cleanSlice);
                 }
 
+                // 2. DEBUG STATS - See if audio is actually there
+                let sum = 0;
+                for (let i = 0; i < 100; i++) sum += Math.abs(finalFeatures[i + 500]);
+                log(`Audio Energy (avg of 100): ${sum/100}`);
+
+                // 3. RUN AI
                 const result = classifier.classify(finalFeatures);
+
                 if (result && result.results) {
                     const top = result.results.sort((a, b) => b.value - a.value)[0];
                     updateUI(top.label, top.value);
-                    log(`AI Result: ${top.label} (${(top.value * 100).toFixed(1)}%)`);
-                    // Notify other scripts about the AI result (label + confidence)
-                    try {
-                        document.dispatchEvent(new CustomEvent('ai-result', {
-                            detail: {
-                                label: top.label,
-                                confidence: top.value
-                            }
-                        }));
-                    } catch (e) { /* ignore */ }
+                    log(`AI WINNER: ${top.label} (${(top.value * 100).toFixed(1)}%)`);
+
+                    document.dispatchEvent(new CustomEvent('ai-result', {
+                        detail: {
+                            label: top.label,
+                            confidence: top.value
+                        }
+                    }));
                 }
             } catch (err) {
                 log("Inference Error: " + err.message);
+                console.error(err);
             }
         }
 
